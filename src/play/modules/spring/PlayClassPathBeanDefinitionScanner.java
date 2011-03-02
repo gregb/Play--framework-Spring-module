@@ -15,26 +15,23 @@ import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.core.type.classreading.CachingMetadataReaderFactory;
 import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.core.type.classreading.MetadataReaderFactory;
-import org.springframework.stereotype.Component;
 
 import play.Logger;
 import play.Play;
 import play.classloading.ApplicationClasses.ApplicationClass;
 
-public class PlayClassPathBeanDefinitionScanner extends ClassPathBeanDefinitionScanner
-{
-	private ResourcePatternResolver resourcePatternResolver = new PathMatchingResourcePatternResolver();
+public class PlayClassPathBeanDefinitionScanner extends ClassPathBeanDefinitionScanner {
 
-	private MetadataReaderFactory metadataReaderFactory = new CachingMetadataReaderFactory(
-		this .resourcePatternResolver);
-	
+	private final ResourcePatternResolver resourcePatternResolver = new PathMatchingResourcePatternResolver();
+
+	private final MetadataReaderFactory metadataReaderFactory = new CachingMetadataReaderFactory(this.resourcePatternResolver);
+
 	/**
 	 * The constructor, which just passed on to the parent class.
 	 * 
 	 * @param registry
 	 */
-	public PlayClassPathBeanDefinitionScanner(BeanDefinitionRegistry registry)
-	{
+	public PlayClassPathBeanDefinitionScanner(final BeanDefinitionRegistry registry) {
 		super(registry);
 	}
 
@@ -43,42 +40,33 @@ public class PlayClassPathBeanDefinitionScanner extends ClassPathBeanDefinitionS
 	 * files (as Spring is trained to do).
 	 */
 	@Override
-	public Set<BeanDefinition> findCandidateComponents(String basePackage)
-	{
+	public Set<BeanDefinition> findCandidateComponents(final String basePackage) {
 		Logger.debug("Finding candidate components with base package: " + basePackage);
-		
-		Set<BeanDefinition> candidates = new LinkedHashSet<BeanDefinition>();
-		
-		try
-		{
-			for (ApplicationClass appClass : Play.classes.all())
-			{
-				if (appClass.name.startsWith(basePackage))
-				{
+
+		final Set<BeanDefinition> candidates = new LinkedHashSet<BeanDefinition>();
+
+		try {
+			for (final ApplicationClass appClass : Play.classes.all()) {
+				if (appClass.name.startsWith(basePackage)) {
 					Logger.debug("Scanning class: " + appClass.name);
-    				ByteArrayResource res = new ByteArrayResource(appClass.enhance());
-    				MetadataReader metadataReader = this.metadataReaderFactory.getMetadataReader(res);
-    				
-    				if (isCandidateComponent(metadataReader))
-    				{
-    					ScannedGenericBeanDefinition sbd = new ScannedGenericBeanDefinition(metadataReader);
-    					sbd.setSource(res);
-    					if (isCandidateComponent(sbd))
-    					{
-    						candidates.add(sbd);
-    					}
-    				}
+					final ByteArrayResource res = new ByteArrayResource(appClass.enhance());
+					final MetadataReader metadataReader = this.metadataReaderFactory.getMetadataReader(res);
+
+					if (isCandidateComponent(metadataReader)) {
+						final ScannedGenericBeanDefinition sbd = new ScannedGenericBeanDefinition(metadataReader);
+						sbd.setSource(res);
+						if (isCandidateComponent(sbd)) {
+							candidates.add(sbd);
+						}
+					}
 				}
-				else
-				{
+				else {
 					Logger.trace("Skipped class: " + appClass.name + " -- wrong base package");
 				}
 			}
 		}
-		catch (IOException ex)
-		{
-			throw new BeanDefinitionStoreException(
-					"I/O failure during classpath scanning", ex);
+		catch (final IOException ex) {
+			throw new BeanDefinitionStoreException("I/O failure during classpath scanning", ex);
 		}
 		return candidates;
 	}
