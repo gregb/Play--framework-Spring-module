@@ -1,6 +1,3 @@
-*iml
-build.properties
 /dist
-lib/play-spring.jar
-*.ipr
-*.iws
+/bin
+lib/export/play-spring.jar
