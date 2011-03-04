@@ -7,5 +7,18 @@
 	<classpathentry kind="lib" path="lib/build/org.springframework.core-3.0.0.RELEASE.jar"/>
 	<classpathentry kind="lib" path="lib/build/javassist-3.9.0.GA.jar"/>
 	<classpathentry kind="lib" path="lib/build/play-1.1.1.jar"/>
+	<classpathentry kind="lib" path="lib/export/org.springframework.aop-3.0.5.RELEASE.jar"/>
+	<classpathentry kind="lib" path="lib/export/org.springframework.asm-3.0.5.RELEASE.jar"/>
+	<classpathentry kind="lib" path="lib/export/org.springframework.aspects-3.0.5.RELEASE.jar"/>
+	<classpathentry kind="lib" path="lib/export/org.springframework.beans-3.0.5.RELEASE.jar"/>
+	<classpathentry kind="lib" path="lib/export/org.springframework.context-3.0.5.RELEASE.jar"/>
+	<classpathentry kind="lib" path="lib/export/org.springframework.context.support-3.0.5.RELEASE.jar"/>
+	<classpathentry kind="lib" path="lib/export/org.springframework.core-3.0.5.RELEASE.jar"/>
+	<classpathentry kind="lib" path="lib/export/org.springframework.expression-3.0.5.RELEASE.jar"/>
+	<classpathentry kind="lib" path="lib/export/org.springframework.jdbc-3.0.5.RELEASE.jar"/>
+	<classpathentry kind="lib" path="lib/export/org.springframework.jms-3.0.5.RELEASE.jar"/>
+	<classpathentry kind="lib" path="lib/export/org.springframework.orm-3.0.5.RELEASE.jar"/>
+	<classpathentry kind="lib" path="lib/export/org.springframework.transaction-3.0.5.RELEASE.jar"/>
+	<classpathentry kind="lib" path="lib/build/joda-time-1.6.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

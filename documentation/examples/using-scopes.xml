@@ -6,14 +6,16 @@
 	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd 
 	http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.0.xsd">
 
-	<!-- Implements Scope as required by Spring -->
-	<bean id="playSpringSessionScope" class="play.modules.spring.SessionScope" />
-
-	<!-- Tell Spring about our custom scope -->
+	<!-- Tell Spring about our custom scopes -->
 	<bean class="org.springframework.beans.factory.config.CustomScopeConfigurer">
 		<property name="scopes">
 			<map>
-				<entry key="session" value-ref="playSpringSessionScope" />
+				<entry key="session">
+					<bean class="play.modules.spring.SessionScope" />
+				</entry>
+				<entry key="request">
+					<bean class="play.modules.spring.RequestScope" />
+				</entry>
 			</map>
 		</property>
 	</bean>
@@ -23,6 +25,15 @@
 	<!-- A session scoped bean -->
 	<!-- Or just use @Scope("session") on the bean class -->
 	<bean id="yourBeanId" class="some.package.and.ClassName" scope="session">
+		<!-- properties, etc -->
+
+		<!-- important -->
+		<aop:scoped-proxy />
+	</bean>
+
+	<!-- A request scoped bean -->
+	<!-- Or just use @Scope("reqeust") on the bean class -->
+	<bean id="yourBeanId2" class="some.package.and.ClassName" scope="request">
 		<!-- properties, etc -->
 
 		<!-- important -->
