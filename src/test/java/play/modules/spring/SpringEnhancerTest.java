@@ -1,7 +1,11 @@
 package play.modules.spring;
 
+import org.junit.Ignore;
+
 import play.classloading.ApplicationClassloader;
 
+
+@Ignore
 public class SpringEnhancerTest extends ApplicationClassloader {
 
 	public void testInjection() throws Exception {

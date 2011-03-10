@@ -1,39 +1,96 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<project name="Spring module" default="build" basedir=".">
+<project name="Spring module" default="dist" basedir=".">
 
+	<property environment="env" />
 	<property file="./build.properties" />
+	<property name="result.filename" value="play-spring.jar" />
 
-	<path id="project.classpath">
-		<fileset dir="lib/build">
+	<condition property="play.path" value="${env.PLAY_PATH}" else="C:/dev/play-1.1.1">
+		<isset property="env.PLAY_PATH" />
+	</condition>
+
+	<echo message="Using PLAY Framework at ${play.path}"/>
+	
+	<property name="src" value="src" />
+	<property name="build" value="build" />
+	<property name="dist" value="dist" />
+
+	<property name="resources" value="${src}/main/resources" />
+	<property name="resources.test" value="${src}/test/resources" />
+	<property name="lib" value="${src}/main/lib" />
+	<property name="lib.test" value="${src}/test/lib" />
+	<property name="src.main.java" value="${src}/main/java" />
+	<property name="src.test.java" value="${src}/test/java" />
+	<property name="build.main.java" value="${build}/main/java" />
+	<property name="build.test.java" value="${build}/test/java" />
+
+	<path id="main.classpath">
+		<fileset dir="${lib}">
+			<include name="*.jar" />
+		</fileset>
+		<fileset dir="${play.path}/framework/lib">
+			<include name="*.jar" />
+		</fileset>
+		<filelist>
+			<file name="${play.path}/framework/play.jar" />
+		</filelist>
+	</path>
+
+	<path id="test.classpath">
+		<path refid="main.classpath" />
+		<pathelement location="${build.main.java}" />
+		<fileset dir="${lib.test}">
 			<include name="*.jar" />
 		</fileset>
 	</path>
 
-	<target name="build" depends="compile">
-		<copy todir="tmp/classes">
-			<fileset dir="src">
+	<target name="clean" description="Clean up the generated files.">
+		<delete dir="${build}" />
+		<delete dir="${dist}" />
+	</target>
+
+	<target name="build" depends="clean" description="Build the source files">
+		<mkdir dir="${build.main.java}" />
+		<mkdir dir="${build.test.java}" />
+
+		<javac srcdir="${src.main.java}" destdir="${build.main.java}" debug="true" classpathref="main.classpath" />
+		<javac srcdir="${src.test.java}" destdir="${build.test.java}" debug="true" classpathref="test.classpath" />
+	</target>
+
+	<target name="test" depends="build" description="Build and run the automated test">
+
+		<mkdir dir="${build}/test/junit" />
+
+		<junit printsummary="yes" haltonfailure="yes" fork="yes" forkmode="once" dir="${basedir}">
+			<classpath refid="test.classpath" />
+			<classpath location="${build.test.java}" />
+			<batchtest todir="${build}/test/junit">
+				<fileset dir="${build.test.java}" includes="**/*Test.class" excludes="**/*$*.class" />
+			</batchtest>
+			<formatter type="xml" />
+		</junit>
+	</target>
+
+	<target name="dist" depends="test">
+		<copy todir="${build.main.java}">
+			<fileset dir="${resources}">
 				<include name="**/*.properties" />
 				<include name="**/*.xml" />
 				<include name="**/play.plugins" />
 				<include name="**/play.static" />
 			</fileset>
 		</copy>
-		<jar destfile="lib/export/play-spring.jar" basedir="tmp/classes">
+
+		<mkdir dir="${dist}" />
+		<jar destfile="${dist}/${result.filename}" basedir="${build.main.java}">
 			<manifest>
 				<section name="Play">
 					<attribute name="Specification-Title" value="Spring module" />
 				</section>
 			</manifest>
 		</jar>
-		<delete dir="tmp" />
 	</target>
 
-	<target name="compile">
-		<mkdir dir="tmp/classes" />
-		<javac srcdir="src" destdir="tmp/classes" target="1.5" debug="true">
-			<classpath refid="project.classpath" />
-		</javac>
-	</target>
 
 </project>

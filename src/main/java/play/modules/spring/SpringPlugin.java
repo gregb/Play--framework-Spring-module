@@ -6,7 +6,9 @@ import java.net.URL;
 import java.util.Map;
 
 import org.springframework.beans.factory.BeanCreationException;
+import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.PropertyPlaceholderConfigurer;
+import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.context.annotation.ClassPathBeanDefinitionScanner;
 import org.springframework.context.support.GenericApplicationContext;
@@ -20,6 +22,7 @@ import play.classloading.ApplicationClasses.ApplicationClass;
 import play.exceptions.PlayException;
 import play.inject.BeanSource;
 import play.inject.Injector;
+import play.modules.spring.scoping.ScopeConfigurer;
 import play.vfs.VirtualFile;
 
 public class SpringPlugin extends PlayPlugin implements BeanSource {
@@ -71,6 +74,10 @@ public class SpringPlugin extends PlayPlugin implements BeanSource {
 				Logger.debug("Starting Spring application context");
 				applicationContext = new GenericApplicationContext();
 				applicationContext.setClassLoader(Play.classloader);
+
+				final BeanDefinition scopeConfigurer = new RootBeanDefinition(ScopeConfigurer.class);
+				applicationContext.registerBeanDefinition("scopeConfigurer", scopeConfigurer);
+
 				final XmlBeanDefinitionReader xmlReader = new XmlBeanDefinitionReader(applicationContext);
 				if (Play.configuration.getProperty(PLAY_SPRING_NAMESPACE_AWARE, "false").equals("true")) {
 					xmlReader.setNamespaceAware(true);
