@@ -1,7 +1,7 @@
 package play.modules.spring.scoping;
 
 import java.util.Map;
-import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.joda.time.Period;
 import org.joda.time.format.PeriodFormat;
@@ -13,7 +13,7 @@ import play.Logger;
 public abstract class AbstractScope implements Scope {
 
 	private Period timeoutPeriod;
-	private final Map<String, ScopeUnit> scopeUnits = new TreeMap<String, ScopeUnit>();
+	private final Map<String, ScopeUnit> scopeUnits = new ConcurrentHashMap<String, ScopeUnit>();
 
 	@Override
 	public Object remove(final String beanName) {
@@ -62,7 +62,7 @@ public abstract class AbstractScope implements Scope {
 				unit = new ScopeUnit(getConversationId());
 			}
 			else {
-				unit = new ScopeUnit(getConversationId(), this.timeoutPeriod);
+				unit = new ScopeUnit(getConversationId(), this.timeoutPeriod.getMillis());
 			}
 
 			this.scopeUnits.put(getConversationId(), unit);
@@ -70,13 +70,7 @@ public abstract class AbstractScope implements Scope {
 		return unit;
 	}
 
-	@Override
-	public Object resolveContextualObject(final String arg0) {
-		Logger.warn("Not implemented: resolveContextualObject(" + arg0 + ") in conversation " + getConversationId());
-		return null;
-	}
-
 	public void setTimeoutPeriod(final String timeoutPeriod) {
-		this.timeoutPeriod = (timeoutPeriod == null) ? null : PeriodFormat.getDefault().parsePeriod(timeoutPeriod);
+		this.timeoutPeriod = timeoutPeriod == null ? null : PeriodFormat.getDefault().parsePeriod(timeoutPeriod);
 	}
 }

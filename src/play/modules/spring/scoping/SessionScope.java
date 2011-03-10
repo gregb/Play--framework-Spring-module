@@ -18,4 +18,13 @@ public class SessionScope extends AbstractScope {
 		return newId;
 	}
 
+	@Override
+	public Object resolveContextualObject(final String key) {
+		if ("session".equals(key)) {
+			return Session.current();
+		}
+
+		return null;
+	}
+
 }
