@@ -9,5 +9,5 @@
 	<classpathentry kind="lib" path="src/main/lib/org.springframework.beans-3.0.5.RELEASE.jar"/>
 	<classpathentry kind="lib" path="src/main/lib/org.springframework.context-3.0.5.RELEASE.jar"/>
 	<classpathentry kind="lib" path="src/main/lib/org.springframework.core-3.0.5.RELEASE.jar"/>
-	<classpathentry kind="output" path="bin/build/classes"/>
+	<classpathentry kind="output" path="dist/classes"/>
 </classpath>
