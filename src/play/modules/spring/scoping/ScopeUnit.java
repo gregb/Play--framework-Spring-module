@@ -3,51 +3,55 @@ package play.modules.spring.scoping;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
-import org.joda.time.Period;
-
-import play.Logger;
 
 public class ScopeUnit {
 
+	private static final Logger log = Logger.getLogger(ScopeUnit.class);
+
+	private static final ScheduledExecutorService SCOPE_DESTRUCTION_THREAD = Executors.newScheduledThreadPool(1);
+	private static final long NO_TIMEOUT = 0;
+
 	private final DateTime creationTime;
+	private final long destructionTimoutMillis;
 	private final String conversationId;
 	private final Map<String, Object> beans = new WeakHashMap<String, Object>();
 	private final Map<String, Runnable> destructionCallbacks = new HashMap<String, Runnable>();
+	private ScheduledFuture<?> futureDestruction;
 
-	public ScopeUnit(final String conversationId, final Period timeout) {
-		Logger.debug("Creating sope unit for conversation " + conversationId);
+	public ScopeUnit(final String conversationId, final long destructionTimoutMillis) {
+		log.debug("Creating sope unit for conversation " + conversationId);
 		this.conversationId = conversationId;
 		this.creationTime = new DateTime();
+		this.destructionTimoutMillis = destructionTimoutMillis;
 
-		final long delay = this.creationTime.withPeriodAdded(timeout, 0).getMillis();
-
-		Logger.debug("This unit will be destroyed in " + timeout.toString());
-
-		final ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(1);
-		executor.schedule(new Runnable() {
-
-			@Override
-			public void run() {
-				destroy();
-			}
-		}, delay, TimeUnit.MILLISECONDS);
+		if (this.destructionTimoutMillis != NO_TIMEOUT) {
+			rescheduleDestruction();
+		}
 	}
 
 	public ScopeUnit(final String conversationId) {
-		Logger.debug("Creating sope unit for conversation " + conversationId);
-		this.conversationId = conversationId;
-		this.creationTime = new DateTime();
+		this(conversationId, NO_TIMEOUT);
 	}
 
 	public Object getBean(final String beanName) {
+		if (this.destructionTimoutMillis != NO_TIMEOUT) {
+			rescheduleDestruction();
+		}
 		return this.beans.get(beanName);
 	}
 
 	public void addBean(final String beanName, final Object bean) {
+		if (this.destructionTimoutMillis != NO_TIMEOUT) {
+			rescheduleDestruction();
+		}
+
 		this.beans.put(beanName, bean);
 	}
 
@@ -56,14 +60,37 @@ public class ScopeUnit {
 	}
 
 	public void destroy() {
-		Logger.debug("Destroying unit " + this.conversationId);
+		log.debug("Destroying unit " + this.conversationId);
 		for (final Runnable callback : this.destructionCallbacks.values()) {
 			callback.run();
 		}
 	}
 
 	public Object removeBean(final String beanName) {
+		if (this.destructionTimoutMillis != NO_TIMEOUT) {
+			rescheduleDestruction();
+		}
+
 		return this.beans.remove(beanName);
+	}
+
+	private void rescheduleDestruction() {
+
+		if (this.futureDestruction != null) {
+			this.futureDestruction.cancel(true);
+		}
+
+		this.futureDestruction = SCOPE_DESTRUCTION_THREAD.schedule(new Runnable() {
+
+			@Override
+			public void run() {
+				log.debug("Destroying this scope unit");
+				destroy();
+				beans.clear();
+			}
+		}, this.destructionTimoutMillis, TimeUnit.MILLISECONDS);
+
+		log.debug("Destruction scheuled for " + this.destructionTimoutMillis + "ms");
 	}
 
 }

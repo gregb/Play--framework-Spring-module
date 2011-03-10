@@ -23,7 +23,6 @@ import play.classloading.ApplicationClasses.ApplicationClass;
 public class PlayClassPathBeanDefinitionScanner extends ClassPathBeanDefinitionScanner {
 
 	private final ResourcePatternResolver resourcePatternResolver = new PathMatchingResourcePatternResolver();
-
 	private final MetadataReaderFactory metadataReaderFactory = new CachingMetadataReaderFactory(this.resourcePatternResolver);
 
 	/**
@@ -36,8 +35,8 @@ public class PlayClassPathBeanDefinitionScanner extends ClassPathBeanDefinitionS
 	}
 
 	/**
-	 * The override, which searches through the play framework's classes, instead of using
-	 * files (as Spring is trained to do).
+	 * The override, which searches through the play framework's classes,
+	 * instead of using files (as Spring is trained to do).
 	 */
 	@Override
 	public Set<BeanDefinition> findCandidateComponents(final String basePackage) {

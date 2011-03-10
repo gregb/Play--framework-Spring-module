@@ -18,4 +18,13 @@ public class RequestScope extends AbstractScope {
 		return newId;
 	}
 
+	@Override
+	public Object resolveContextualObject(final String key) {
+		if ("request".equals(key)) {
+			return Http.Request.current();
+		}
+
+		return null;
+	}
+
 }
