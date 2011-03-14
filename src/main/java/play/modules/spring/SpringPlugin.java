@@ -59,98 +59,121 @@ public class SpringPlugin extends PlayPlugin implements BeanSource {
 
 	@Override
 	public void enhance(final ApplicationClass applicationClass) throws Exception {
-		new SpringEnhancer().enhanceThisClass(applicationClass);
+		// new SpringEnhancer().enhanceThisClass(applicationClass);
 	}
 
 	@Override
 	public void onApplicationStart() {
+
+		Logger.debug("Starting Spring application context");
+		applicationContext = new GenericApplicationContext();
+		applicationContext.setClassLoader(Play.classloader);
+
+		final BeanDefinition scopeConfigurer = new RootBeanDefinition(ScopeConfigurer.class);
+		applicationContext.registerBeanDefinition("scopeConfigurer", scopeConfigurer);
+
+		if (Play.configuration.getProperty(PLAY_SPRING_ADD_PLAY_PROPERTIES, "true").equals("true")) {
+			Logger.debug("Adding PropertyPlaceholderConfigurer with Play properties");
+			final PropertyPlaceholderConfigurer configurer = new PropertyPlaceholderConfigurer();
+			configurer.setProperties(Play.configuration);
+			applicationContext.addBeanFactoryPostProcessor(configurer);
+		}
+		else {
+			Logger.debug("PropertyPlaceholderConfigurer with Play properties NOT added");
+		}
+
+		// Check for component scan
+		final boolean doComponentScan = Play.configuration.getProperty(PLAY_SPRING_COMPONENT_SCAN_FLAG, "false").equals("true");
+		Logger.debug("Spring configuration do component scan: " + doComponentScan);
+		if (doComponentScan) {
+			final ClassPathBeanDefinitionScanner scanner = new PlayClassPathBeanDefinitionScanner(applicationContext);
+			final String scanBasePackage = Play.configuration.getProperty(PLAY_SPRING_COMPONENT_SCAN_BASE_PACKAGES, "");
+			Logger.debug("Base package for scan: " + scanBasePackage);
+			Logger.debug("Scanning...");
+			scanner.scan(scanBasePackage.split(","));
+			Logger.debug("... component scanning complete");
+		}
+
 		URL url = Play.classloader.getResource(Play.id + ".application-context.xml");
 		if (url == null) {
 			url = Play.classloader.getResource("application-context.xml");
 		}
 		if (url != null) {
-			InputStream is = null;
+			Logger.info("Loading beans from " + url);
+			loadBeans(url);
+		}
+
+		Injector.inject(this);
+	}
+
+	private XmlBeanDefinitionReader buildBeanDefinitionReader() {
+		final XmlBeanDefinitionReader xmlReader = new XmlBeanDefinitionReader(applicationContext);
+		if (Play.configuration.getProperty(PLAY_SPRING_NAMESPACE_AWARE, "false").equals("true")) {
+			xmlReader.setNamespaceAware(true);
+		}
+		xmlReader.setValidationMode(XmlBeanDefinitionReader.VALIDATION_NONE);
+
+		return xmlReader;
+	}
+
+	private void loadBeans(final URL url) {
+		final XmlBeanDefinitionReader xmlReader = buildBeanDefinitionReader();
+
+		InputStream is = null;
+		try {
+			is = url.openStream();
+			xmlReader.loadBeanDefinitions(new InputSource(is));
+			final ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
+			Thread.currentThread().setContextClassLoader(Play.classloader);
 			try {
-				Logger.debug("Starting Spring application context");
-				applicationContext = new GenericApplicationContext();
-				applicationContext.setClassLoader(Play.classloader);
-
-				final BeanDefinition scopeConfigurer = new RootBeanDefinition(ScopeConfigurer.class);
-				applicationContext.registerBeanDefinition("scopeConfigurer", scopeConfigurer);
-
-				final XmlBeanDefinitionReader xmlReader = new XmlBeanDefinitionReader(applicationContext);
-				if (Play.configuration.getProperty(PLAY_SPRING_NAMESPACE_AWARE, "false").equals("true")) {
-					xmlReader.setNamespaceAware(true);
-				}
-				xmlReader.setValidationMode(XmlBeanDefinitionReader.VALIDATION_NONE);
-
-				if (Play.configuration.getProperty(PLAY_SPRING_ADD_PLAY_PROPERTIES, "true").equals("true")) {
-					Logger.debug("Adding PropertyPlaceholderConfigurer with Play properties");
-					final PropertyPlaceholderConfigurer configurer = new PropertyPlaceholderConfigurer();
-					configurer.setProperties(Play.configuration);
-					applicationContext.addBeanFactoryPostProcessor(configurer);
+				applicationContext.refresh();
+				startDate = System.currentTimeMillis();
+			}
+			catch (final BeanCreationException e) {
+				final Throwable ex = e.getCause();
+				if (ex instanceof PlayException) {
+					throw (PlayException) ex;
 				}
 				else {
-					Logger.debug("PropertyPlaceholderConfigurer with Play properties NOT added");
+					throw e;
 				}
-				//
-				// Check for component scan
-				//
-				final boolean doComponentScan = Play.configuration.getProperty(PLAY_SPRING_COMPONENT_SCAN_FLAG, "false").equals("true");
-				Logger.debug("Spring configuration do component scan: " + doComponentScan);
-				if (doComponentScan) {
-					final ClassPathBeanDefinitionScanner scanner = new PlayClassPathBeanDefinitionScanner(applicationContext);
-					final String scanBasePackage = Play.configuration.getProperty(PLAY_SPRING_COMPONENT_SCAN_BASE_PACKAGES, "");
-					Logger.debug("Base package for scan: " + scanBasePackage);
-					Logger.debug("Scanning...");
-					scanner.scan(scanBasePackage.split(","));
-					Logger.debug("... component scanning complete");
-				}
-
-				is = url.openStream();
-				xmlReader.loadBeanDefinitions(new InputSource(is));
-				final ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
-				Thread.currentThread().setContextClassLoader(Play.classloader);
-				try {
-					applicationContext.refresh();
-					startDate = System.currentTimeMillis();
-				}
-				catch (final BeanCreationException e) {
-					final Throwable ex = e.getCause();
-					if (ex instanceof PlayException) {
-						throw (PlayException) ex;
-					}
-					else {
-						throw e;
-					}
-				}
-				finally {
-					Thread.currentThread().setContextClassLoader(originalClassLoader);
-				}
-			}
-			catch (final IOException e) {
-				Logger.error(e, "Can't load spring config file");
 			}
 			finally {
-				if (is != null) {
-					try {
-						is.close();
-					}
-					catch (final IOException e) {
-						Logger.error(e, "Can't close spring config file stream");
-					}
+				Thread.currentThread().setContextClassLoader(originalClassLoader);
+			}
+		}
+		catch (final IOException e) {
+			Logger.error(e, "Can't load spring config file");
+		}
+		finally {
+			if (is != null) {
+				try {
+					is.close();
+				}
+				catch (final IOException e) {
+					Logger.error(e, "Can't close spring config file stream");
 				}
 			}
 		}
-		Injector.inject(this);
 	}
 
 	@Override
 	public <T> T getBeanOfType(final Class<T> clazz) {
-		final Map<String, T> beans = applicationContext.getBeansOfType(clazz);
-		if (beans.size() == 0) {
+		Logger.debug("Injecting a bean from the spring context: " + clazz);
+
+		if (applicationContext == null) {
+			Logger.warn("Attempting to get a bean from a null application context");
 			return null;
 		}
-		return beans.values().iterator().next();
+
+		final Map<String, T> beans = applicationContext.getBeansOfType(clazz);
+		if (beans.size() == 0) {
+			Logger.warn("No beans of type " + clazz);
+			return null;
+		}
+
+		final T bean = beans.values().iterator().next();
+		Logger.debug("Returning: " + bean);
+		return bean;
 	}
 }

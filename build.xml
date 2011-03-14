@@ -82,8 +82,8 @@
 			</fileset>
 		</copy>
 
-		<mkdir dir="${dist}" />
-		<jar destfile="${dist}/${result.filename}" basedir="${build.main.java}">
+		<mkdir dir="${dist}/lib" />
+		<jar destfile="${dist}/lib/${result.filename}" basedir="${build.main.java}">
 			<manifest>
 				<section name="Play">
 					<attribute name="Specification-Title" value="Spring module" />

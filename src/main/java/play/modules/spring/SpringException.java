@@ -2,7 +2,6 @@ package play.modules.spring;
 
 import play.exceptions.PlayException;
 
-
 public class SpringException extends PlayException {
 
 	public String getErrorDescription() {

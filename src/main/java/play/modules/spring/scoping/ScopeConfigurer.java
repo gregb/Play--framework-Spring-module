@@ -3,10 +3,15 @@ package play.modules.spring.scoping;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.inject.Singleton;
+
 import org.springframework.beans.factory.config.CustomScopeConfigurer;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 @Component
+@Scope("singleton")
+@Singleton
 public class ScopeConfigurer extends CustomScopeConfigurer {
 
 	public ScopeConfigurer() {
