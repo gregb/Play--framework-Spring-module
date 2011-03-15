@@ -10,8 +10,7 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.PropertyPlaceholderConfigurer;
 import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
-import org.springframework.context.annotation.ClassPathBeanDefinitionScanner;
-import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.xml.sax.InputSource;
 
 import play.Logger;
@@ -35,7 +34,7 @@ public class SpringPlugin extends PlayPlugin implements BeanSource {
 	private static final String PLAY_SPRING_ADD_PLAY_PROPERTIES = "play.spring.add-play-properties";
 	private static final String PLAY_SPRING_NAMESPACE_AWARE = "play.spring.namespace-aware";
 
-	public static GenericApplicationContext applicationContext;
+	public static AnnotationConfigApplicationContext applicationContext;
 	private long startDate = 0;
 
 	@Override
@@ -59,14 +58,14 @@ public class SpringPlugin extends PlayPlugin implements BeanSource {
 
 	@Override
 	public void enhance(final ApplicationClass applicationClass) throws Exception {
-		// new SpringEnhancer().enhanceThisClass(applicationClass);
+		// do nothing
 	}
 
 	@Override
 	public void onApplicationStart() {
 
 		Logger.debug("Starting Spring application context");
-		applicationContext = new GenericApplicationContext();
+		applicationContext = new AnnotationConfigApplicationContext();
 		applicationContext.setClassLoader(Play.classloader);
 
 		final BeanDefinition scopeConfigurer = new RootBeanDefinition(ScopeConfigurer.class);
@@ -86,11 +85,10 @@ public class SpringPlugin extends PlayPlugin implements BeanSource {
 		final boolean doComponentScan = Play.configuration.getProperty(PLAY_SPRING_COMPONENT_SCAN_FLAG, "false").equals("true");
 		Logger.debug("Spring configuration do component scan: " + doComponentScan);
 		if (doComponentScan) {
-			final ClassPathBeanDefinitionScanner scanner = new PlayClassPathBeanDefinitionScanner(applicationContext);
 			final String scanBasePackage = Play.configuration.getProperty(PLAY_SPRING_COMPONENT_SCAN_BASE_PACKAGES, "");
 			Logger.debug("Base package for scan: " + scanBasePackage);
 			Logger.debug("Scanning...");
-			scanner.scan(scanBasePackage.split(","));
+			applicationContext.scan(scanBasePackage.split(","));
 			Logger.debug("... component scanning complete");
 		}
 
