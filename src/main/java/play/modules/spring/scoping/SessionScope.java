@@ -14,7 +14,7 @@ public class SessionScope extends AbstractScope {
 		}
 
 		final String newId = Session.current().getId();
-		Logger.debug("Registering new session " + newId);
+		Logger.debug("Using session " + newId);
 		return newId;
 	}
 

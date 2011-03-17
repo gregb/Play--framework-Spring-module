@@ -14,7 +14,7 @@ public class RequestScope extends AbstractScope {
 		}
 
 		final String newId = Integer.toString(Http.Request.current().hashCode());
-		Logger.debug("Registering new request " + newId);
+		Logger.debug("Using request " + newId);
 		return newId;
 	}
 

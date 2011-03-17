@@ -2,14 +2,11 @@ package play.modules.spring;
 
 import play.exceptions.PlayException;
 
-public class SpringException extends PlayException {
+public abstract class SpringException extends PlayException {
 
-	public String getErrorDescription() {
-		return "The Spring application context is not started.";
-	}
-
+	@Override
 	public String getErrorTitle() {
-		return "Spring context is not started !";
+		return "Spring Error";
 	}
 
 }

@@ -3,7 +3,7 @@ package play.modules.spring;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.Map;
+import java.util.Arrays;
 
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -11,6 +11,8 @@ import org.springframework.beans.factory.config.PropertyPlaceholderConfigurer;
 import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.context.annotation.ClassPathBeanDefinitionScanner;
+import org.springframework.context.annotation.ScopedProxyMode;
 import org.xml.sax.InputSource;
 
 import play.Logger;
@@ -19,17 +21,18 @@ import play.Play.Mode;
 import play.PlayPlugin;
 import play.classloading.ApplicationClasses.ApplicationClass;
 import play.exceptions.PlayException;
-import play.inject.BeanSource;
-import play.inject.Injector;
 import play.modules.spring.scoping.ScopeConfigurer;
 import play.vfs.VirtualFile;
 
-public class SpringPlugin extends PlayPlugin implements BeanSource {
+public class SpringPlugin extends PlayPlugin {
+
+	// private static final SpringEnhancer enhancer = new SpringEnhancer();
 
 	/**
 	 * Component scanning constants.
 	 */
 	private static final String PLAY_SPRING_COMPONENT_SCAN_FLAG = "play.spring.component-scan";
+	private static final String PLAY_SPRING_COMPONENT_SCAN_PROXY_MODE = "play.spring.component-scan.proxy-mode";
 	private static final String PLAY_SPRING_COMPONENT_SCAN_BASE_PACKAGES = "play.spring.component-scan.base-packages";
 	private static final String PLAY_SPRING_ADD_PLAY_PROPERTIES = "play.spring.add-play-properties";
 	private static final String PLAY_SPRING_NAMESPACE_AWARE = "play.spring.namespace-aware";
@@ -58,7 +61,7 @@ public class SpringPlugin extends PlayPlugin implements BeanSource {
 
 	@Override
 	public void enhance(final ApplicationClass applicationClass) throws Exception {
-		// do nothing
+		new SpringEnhancer().enhanceThisClass(applicationClass);
 	}
 
 	@Override
@@ -85,10 +88,34 @@ public class SpringPlugin extends PlayPlugin implements BeanSource {
 		final boolean doComponentScan = Play.configuration.getProperty(PLAY_SPRING_COMPONENT_SCAN_FLAG, "false").equals("true");
 		Logger.debug("Spring configuration do component scan: " + doComponentScan);
 		if (doComponentScan) {
+			final ClassPathBeanDefinitionScanner scanner = new ClassPathBeanDefinitionScanner(applicationContext);
+
+			try {
+				final String proxyModeString = Play.configuration.getProperty(PLAY_SPRING_COMPONENT_SCAN_PROXY_MODE);
+				if (proxyModeString != null) {
+					final ScopedProxyMode proxyMode = ScopedProxyMode.valueOf(proxyModeString);
+					scanner.setScopedProxyMode(proxyMode);
+				}
+			}
+			catch (final Throwable e) {
+				throw new SpringException() {
+
+					@Override
+					public String getErrorDescription() {
+						return "Bad value provided for " + PLAY_SPRING_COMPONENT_SCAN_PROXY_MODE + ": must be one of " + Arrays.toString(ScopedProxyMode.values());
+					}
+
+					@Override
+					public String getSourceFile() {
+						return "conf/application.conf";
+					}
+				};
+			}
+
 			final String scanBasePackage = Play.configuration.getProperty(PLAY_SPRING_COMPONENT_SCAN_BASE_PACKAGES, "");
 			Logger.debug("Base package for scan: " + scanBasePackage);
 			Logger.debug("Scanning...");
-			applicationContext.scan(scanBasePackage.split(","));
+			scanner.scan(scanBasePackage.split(","));
 			Logger.debug("... component scanning complete");
 		}
 
@@ -100,8 +127,6 @@ public class SpringPlugin extends PlayPlugin implements BeanSource {
 			Logger.info("Loading beans from " + url);
 			loadBeans(url);
 		}
-
-		Injector.inject(this);
 	}
 
 	private XmlBeanDefinitionReader buildBeanDefinitionReader() {
@@ -155,23 +180,4 @@ public class SpringPlugin extends PlayPlugin implements BeanSource {
 		}
 	}
 
-	@Override
-	public <T> T getBeanOfType(final Class<T> clazz) {
-		Logger.debug("Injecting a bean from the spring context: " + clazz);
-
-		if (applicationContext == null) {
-			Logger.warn("Attempting to get a bean from a null application context");
-			return null;
-		}
-
-		final Map<String, T> beans = applicationContext.getBeansOfType(clazz);
-		if (beans.size() == 0) {
-			Logger.warn("No beans of type " + clazz);
-			return null;
-		}
-
-		final T bean = beans.values().iterator().next();
-		Logger.debug("Returning: " + bean);
-		return bean;
-	}
 }
