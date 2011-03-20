@@ -62,10 +62,10 @@ public class SpringEnhancer extends Enhancer {
 
 							switch (injectionInfo.injectionMethod) {
 								case BY_NAME:
-									fieldAccess.replace("$_ = ($r)play.utils.Java.invokeStatic(play.modules.spring.Spring.class, \"getBeanOfType\", new Object[] {$type});");
+									fieldAccess.replace("$_ = ($r)play.utils.Java.invokeStatic(play.modules.spring.Spring.class, \"getBean\", new Object[] {\"" + injectionInfo.beanName + "\"});");
 									break;
 								case BY_TYPE:
-									fieldAccess.replace("$_ = ($r)play.utils.Java.invokeStatic(play.modules.spring.Spring.class, \"getBean\", new Object[] {\"" + injectionInfo.beanName + "\"});");
+									fieldAccess.replace("$_ = ($r)play.utils.Java.invokeStatic(play.modules.spring.Spring.class, \"getBeanOfType\", new Object[] {$type});");
 									break;
 							}
 						}
@@ -121,6 +121,7 @@ public class SpringEnhancer extends Enhancer {
 					injectionInfo.beanName = ((Resource) annotation).name();
 				}
 
+				fieldsToInject.put(ctField, injectionInfo);
 			}
 		}
 		return fieldsToInject;
